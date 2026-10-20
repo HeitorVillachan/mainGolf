@@ -1,2 +1,2 @@
 # main(Golf)
-Trabalho do Jogo de PIF 
+Trabalho Jogo de PIF 

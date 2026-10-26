@@ -1,9 +1,2 @@
-CC = gcc
-CFLAGS = -Wall -Wextra -Iinclude
-SRC = $(wildcard src/*.c)
-
-golf: $(SRC)
-	$(CC) $(CFLAGS) $(SRC) -o golf
-
-clean:
-	rm -f golf
+"CC = gcc`nCFLAGS = -Wall -Wextra -Iinclude`nSRC = `$(wildcard src/*.c)`nLIBS = -lraylib -lopengl32 -lgdi32 -lwinmm`n`ngolf: `$(SRC)`n`t`$(CC) `$(CFLAGS) `$(SRC) -o golf.exe `$(LIBS)`n`nclean:`n`tdel golf.exe`n" | Set-Content -NoNewline Makefile
+Add-Content .gitignore "golf.exe"

@@ -1,82 +1,42 @@
+#include "raylib.h"
 
-#include <string.h>
+int main(void) {
+    const int screenWidth = 800;
+    const int screenHeight = 450;
 
-#include "screen.h"
-#include "keyboard.h"
-#include "timer.h"
+    InitWindow(screenWidth, screenHeight, "Raylib - Teste de Colisao nas Bordas");
 
-int x = 34, y = 12;
-int incX = 1, incY = 1;
+    Vector2 ballPosition = { (float)screenWidth / 2, (float)screenHeight / 2 };
+    Vector2 ballSpeed = { 5.0f, 4.0f };
+    float ballRadius = 20.0f;
+    Color ballColor = MAROON;
 
-void printHello(int nextX, int nextY)
-{
-    screenSetColor(CYAN, DARKGRAY);
-    screenGotoxy(x, y);
-    printf("           ");
-    x = nextX;
-    y = nextY;
-    screenGotoxy(x, y);
-    printf("Hello World");
-}
+    SetTargetFPS(60);
 
-void printKey(int ch)
-{
-    screenSetColor(YELLOW, DARKGRAY);
-    screenGotoxy(35, 22);
-    printf("Key code :");
+    while (!WindowShouldClose()) {
+        ballPosition.x += ballSpeed.x;
+        ballPosition.y += ballSpeed.y;
 
-    screenGotoxy(34, 23);
-    printf("            ");
-    
-    if (ch == 27) screenGotoxy(36, 23);
-    else screenGotoxy(39, 23);
-
-    printf("%d ", ch);
-    while (keyhit())
-    {
-        printf("%d ", readch());
-    }
-}
-
-int main() 
-{
-    static int ch = 0;
-    static long timer = 0;
-
-    screenInit(1);
-    keyboardInit();
-    timerInit(50);
-
-    printHello(x, y);
-    screenUpdate();
-
-    while (ch != 10 && timer <= 100) //enter or 5s
-    {
-        // Handle user input
-        if (keyhit()) 
-        {
-            ch = readch();
-            printKey(ch);
-            screenUpdate();
+        if ((ballPosition.x >= (screenWidth - ballRadius)) || (ballPosition.x <= ballRadius)) {
+            ballSpeed.x *= -1.0f;
+            ballColor = (Color){ GetRandomValue(50, 255), GetRandomValue(50, 255), GetRandomValue(50, 255), 255 };
         }
 
-        if (timerTimeOver() == 1)
-        {
-            int newX = x + incX;
-            if (newX >= (MAXX -strlen("Hello World") -1) || newX <= MINX+1) incX = -incX;
-            int newY = y + incY;
-            if (newY >= MAXY-1 || newY <= MINY+1) incY = -incY;
-
-            printHello(newX, newY);
-
-            screenUpdate();
-            timer++;
+        if ((ballPosition.y >= (screenHeight - ballRadius)) || (ballPosition.y <= ballRadius)) {
+            ballSpeed.y *= -1.0f;
+            ballColor = (Color){ GetRandomValue(50, 255), GetRandomValue(50, 255), GetRandomValue(50, 255), 255 };
         }
+
+        BeginDrawing();
+
+            ClearBackground(RAYWHITE);
+
+            DrawCircleV(ballPosition, ballRadius, ballColor);
+            DrawText("Raylib - Quicando nas bordas!", 10, 10, 20, LIGHTGRAY);
+
+        EndDrawing();
     }
 
-    keyboardDestroy();
-    screenDestroy();
-    timerDestroy();
-
+    CloseWindow();
     return 0;
 }

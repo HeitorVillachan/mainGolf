@@ -19,7 +19,8 @@ typedef struct mapa{
 }mapa;
 
 void liberamatriz(int **m, int linhas);
-mapa* carregarMapa(const char *caminhoArquivo);
-void liberarMapa(mapa *m);
+mapa* carregarmapa(const char *caminhoArquivo);
+void liberarmapa(mapa *m);
+void desenharmapa(mapa *m, float tamanhotile);
 
 #endif

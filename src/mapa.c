@@ -7,7 +7,6 @@ int **criamatriz(int linhas, int colunas){
     int **m = malloc(linhas * sizeof(int*));
     if (m == NULL) return NULL;
 
-
     for(int i = 0; i<linhas;i++){
         m[i] = malloc(colunas * sizeof(int));
 
@@ -24,13 +23,6 @@ void liberamatriz(int **m, int linhas) {
         free(m[i]);
     }
     free(m);
-}
-mapa* carregarmapa(const char *caminhoArquivo) {
-    FILE *arquivo = fopen(caminhoArquivo, "r");
-    if (arquivo == NULL) {
-        printf("Erro ao abrir o arquivo do mapa: %s\n", caminhoArquivo);
-        return NULL;
-    }
 }
 mapa* carregarmapa(const char *caminhoArquivo) {
     FILE *arquivo = fopen(caminhoArquivo, "r");
@@ -65,3 +57,24 @@ void liberarmapa(mapa *m) {
     liberamatriz(m->chao, m->linha);
     free(m);
 }
+
+void desenharmapa(mapa *m, float tamanhoTile) {
+    if (m == NULL || m->chao == NULL) return;
+    Color corespisos[] = { //vai na ordem do enum
+        GREEN,     
+        YELLOW,    
+        LIGHTGRAY, 
+        BROWN,     
+        DARKGRAY,  
+        BLUE,      
+        BLACK      
+    };
+
+    for (int i = 0; i < m->linha; i++) {
+        for (int j = 0; j < m->coluna; j++) {
+            int tipoPiso = m->chao[i][j];
+            Color cor = (tipoPiso >= grama && tipoPiso <= buraco) ? corespisos[tipoPiso] : WHITE;
+            DrawRectangle(j * tamanhoTile, i * tamanhoTile, tamanhoTile, tamanhoTile, cor);
+            DrawRectangleLines(j * tamanhoTile, i * tamanhoTile, tamanhoTile, tamanhoTile, Fade(BLACK, 0.2f));}
+        }}
+

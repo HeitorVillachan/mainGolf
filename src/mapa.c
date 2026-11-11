@@ -2,7 +2,6 @@
 #include "raylib.h"
 #include <stdio.h>
 #include <stdlib.h>
-
 int **criamatriz(int linhas, int colunas){
     int **m = malloc(linhas * sizeof(int*));
     if (m == NULL) return NULL;
@@ -11,12 +10,11 @@ int **criamatriz(int linhas, int colunas){
         m[i] = malloc(colunas * sizeof(int));
 
         if (m[i] == NULL) {
-            for (int j = 0; j < i; j++) free(m[j]);
+            for (int j= 0; j < i; j++) free(m[j]);
             free(m);
             return NULL;}
         }
     return m;}
-
 void liberamatriz(int **m, int linhas) {
     if (m == NULL) return;
     for (int i = 0; i < linhas; i++) {
@@ -50,6 +48,23 @@ mapa* carregarmapa(const char *caminhoArquivo) {
         }
     }
     fclose(arquivo);
+    m->posini.x = TILE * 2;
+    m->posini.y = TILE * 2;
+    m->posbur.x = TILE * 5;
+    m->posbur.y = TILE * 5;
+    for (int i = 0; i < m->linha; i++) {
+        for (int j = 0; j < m->coluna; j++) {
+            if (m->chao[i][j] == inicio) {
+                m->posini.x = j * TILE + TILE / 2;
+                m->posini.y = i * TILE + TILE / 2;
+                m->chao[i][j] = grama;
+            }
+            if (m->chao[i][j] == buraco) {
+                m->posbur.x = j * TILE + TILE / 2;
+                m->posbur.y = i * TILE + TILE / 2;
+            }
+        }
+    }
     return m;
 }
 void liberarmapa(mapa *m) {
@@ -57,7 +72,6 @@ void liberarmapa(mapa *m) {
     liberamatriz(m->chao, m->linha);
     free(m);
 }
-
 void desenharmapa(mapa *m, float tamanhoTile) {
     if (m == NULL || m->chao == NULL) return;
     Color corespisos[] = { //vai na ordem do enum
@@ -69,7 +83,6 @@ void desenharmapa(mapa *m, float tamanhoTile) {
         BLUE,      
         BLACK      
     };
-
     for (int i = 0; i < m->linha; i++) {
         for (int j = 0; j < m->coluna; j++) {
             int tipoPiso = m->chao[i][j];
@@ -77,4 +90,12 @@ void desenharmapa(mapa *m, float tamanhoTile) {
             DrawRectangle(j * tamanhoTile, i * tamanhoTile, tamanhoTile, tamanhoTile, cor);
             DrawRectangleLines(j * tamanhoTile, i * tamanhoTile, tamanhoTile, tamanhoTile, Fade(BLACK, 0.2f));}
         }}
+
+int pisoaqui(mapa *m, float x, float y) {
+    if (x < 0 || y < 0) return parede;
+    int j = x / TILE;
+    int i = y / TILE;
+    if (i >=m->linha || j >= m->coluna) return parede;
+    return m->chao[i][j];
+}       
 

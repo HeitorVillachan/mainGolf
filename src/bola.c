@@ -1,9 +1,5 @@
 #include "bola.h"
 #include "raymath.h"
-
-
-
-
 void iniciabola(bola *b, float x, float y){
     b->pos.x=x;
     b->pos.y=y;

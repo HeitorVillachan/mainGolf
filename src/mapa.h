@@ -2,9 +2,8 @@
 #define MAPA_H
 #include "raylib.h"
 #define TILE 40
-int **criamatriz(int linhas, int colunas);
 
-typedef enum{ //nesse enum ele enumera sozinho
+typedef enum{ // o enum numera sozinho, na ordem
     grama,
     areia,
     gelo,
@@ -19,6 +18,8 @@ typedef struct mapa{
     int linha, coluna, **chao;
     Vector2 posini, posbur;
 }mapa;
+
+int **criamatriz(int linhas, int colunas);
 void liberamatriz(int **m, int linhas);
 mapa* carregarmapa(const char *caminhoArquivo);
 void liberarmapa(mapa *m);

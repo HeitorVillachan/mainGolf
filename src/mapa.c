@@ -2,64 +2,78 @@
 #include "raylib.h"
 #include <stdio.h>
 #include <stdlib.h>
+
 int **criamatriz(int linhas, int colunas){
     int **m = malloc(linhas * sizeof(int*));
     if (m == NULL) return NULL;
 
-    for(int i = 0; i<linhas;i++){
+    for (int i = 0; i < linhas; i++){
         m[i] = malloc(colunas * sizeof(int));
-
-        if (m[i] == NULL) {
-            for (int j= 0; j < i; j++) free(m[j]);
+        if (m[i] == NULL){
+            for (int j = 0; j < i; j++) free(m[j]);
             free(m);
-            return NULL;}
+            return NULL;
         }
-    return m;}
-void liberamatriz(int **m, int linhas) {
-    if (m == NULL) return;
-    for (int i = 0; i < linhas; i++) {
-        free(m[i]);
     }
+    return m;
+}
+
+void liberamatriz(int **m, int linhas){
+    if (m == NULL) return;
+    for (int i = 0; i < linhas; i++) free(m[i]);
     free(m);
 }
-mapa* carregarmapa(const char *caminhoArquivo) {
+
+mapa* carregarmapa(const char *caminhoArquivo){
     FILE *arquivo = fopen(caminhoArquivo, "r");
-    if (arquivo == NULL) {
+    if (arquivo == NULL){
         printf("Erro ao abrir o arquivo do mapa: %s\n", caminhoArquivo);
         return NULL;
     }
     mapa *m = malloc(sizeof(mapa));
-    if (m == NULL) {
+    if (m == NULL){
         fclose(arquivo);
-        return NULL;}
-    if (fscanf(arquivo, "%d %d", &m->linha, &m->coluna) != 2) {
-        free(m);
-        fclose(arquivo);
-        return NULL;}
-    m->chao = criamatriz(m->linha, m->coluna);
-    if (m->chao == NULL) {
+        return NULL;
+    }
+    if (fscanf(arquivo, "%d %d", &m->linha, &m->coluna) != 2
+        || m->linha <= 0 || m->coluna <= 0){
+        printf("Cabecalho invalido no mapa: %s\n", caminhoArquivo);
         free(m);
         fclose(arquivo);
         return NULL;
     }
-    for (int i = 0; i < m->linha; i++) { //vai preencher a matriz baseado no que tem no arquivo cada numero remete a uma struct dos pisos la 
-        for (int j = 0; j < m->coluna; j++) {
-            fscanf(arquivo, "%d", &m->chao[i][j]);
+    m->chao = criamatriz(m->linha, m->coluna);
+    if (m->chao == NULL){
+        free(m);
+        fclose(arquivo);
+        return NULL;
+    }
+
+    // cada número do arquivo corresponde a um valor do enum pisos
+    for (int i = 0; i < m->linha; i++){
+        for (int j = 0; j < m->coluna; j++){
+            if (fscanf(arquivo, "%d", &m->chao[i][j]) != 1){
+                printf("Mapa incompleto na linha %d, coluna %d\n", i, j);
+                m->chao[i][j] = parede;
+            }
         }
     }
     fclose(arquivo);
+
+    // valores padrão caso o mapa não tenha início ou buraco
     m->posini.x = TILE * 2;
     m->posini.y = TILE * 2;
     m->posbur.x = TILE * 5;
     m->posbur.y = TILE * 5;
-    for (int i = 0; i < m->linha; i++) {
-        for (int j = 0; j < m->coluna; j++) {
-            if (m->chao[i][j] == inicio) {
+
+    for (int i = 0; i < m->linha; i++){
+        for (int j = 0; j < m->coluna; j++){
+            if (m->chao[i][j] == inicio){
                 m->posini.x = j * TILE + TILE / 2;
                 m->posini.y = i * TILE + TILE / 2;
                 m->chao[i][j] = grama;
             }
-            if (m->chao[i][j] == buraco) {
+            if (m->chao[i][j] == buraco){
                 m->posbur.x = j * TILE + TILE / 2;
                 m->posbur.y = i * TILE + TILE / 2;
             }
@@ -67,35 +81,38 @@ mapa* carregarmapa(const char *caminhoArquivo) {
     }
     return m;
 }
-void liberarmapa(mapa *m) {
+
+void liberarmapa(mapa *m){
     if (m == NULL) return;
     liberamatriz(m->chao, m->linha);
     free(m);
 }
-void desenharmapa(mapa *m, float tamanhoTile) {
+
+void desenharmapa(mapa *m, float tamanhoTile){
     if (m == NULL || m->chao == NULL) return;
-    Color corespisos[] = { //vai na ordem do enum
-        GREEN,     
-        YELLOW,    
-        LIGHTGRAY, 
-        BROWN,     
-        DARKGRAY,  
-        BLUE,      
-        BLACK      
+    Color corespisos[] = { // na ordem do enum
+        GREEN,      // grama
+        YELLOW,     // areia
+        LIGHTGRAY,  // gelo
+        BROWN,      // barro
+        DARKGRAY,   // parede
+        BLUE,       // agua
+        BLACK       // buraco
     };
-    for (int i = 0; i < m->linha; i++) {
-        for (int j = 0; j < m->coluna; j++) {
+    for (int i = 0; i < m->linha; i++){
+        for (int j = 0; j < m->coluna; j++){
             int tipoPiso = m->chao[i][j];
             Color cor = (tipoPiso >= grama && tipoPiso <= buraco) ? corespisos[tipoPiso] : WHITE;
             DrawRectangle(j * tamanhoTile, i * tamanhoTile, tamanhoTile, tamanhoTile, cor);
-            DrawRectangleLines(j * tamanhoTile, i * tamanhoTile, tamanhoTile, tamanhoTile, Fade(BLACK, 0.2f));}
-        }}
+            DrawRectangleLines(j * tamanhoTile, i * tamanhoTile, tamanhoTile, tamanhoTile, Fade(BLACK, 0.2f));
+        }
+    }
+}
 
-int pisoaqui(mapa *m, float x, float y) {
-    if (x < 0 || y < 0) return parede;
+int pisoaqui(mapa *m, float x, float y){
+    if (m == NULL || x < 0 || y < 0) return parede;
     int j = x / TILE;
     int i = y / TILE;
-    if (i >=m->linha || j >= m->coluna) return parede;
+    if (i >= m->linha || j >= m->coluna) return parede;
     return m->chao[i][j];
-}       
-
+}

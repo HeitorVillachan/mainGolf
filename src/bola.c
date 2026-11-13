@@ -1,6 +1,7 @@
 #include "bola.h"
 #include "raymath.h"
 #include <math.h>
+#include <stdlib.h>
 
 #define RESTITUICAO 0.8f      // quanto de velocidade sobra após bater
 #define PASSOS 4              // subpassos por frame (evita atravessar parede)

@@ -124,4 +124,31 @@ void atualizabola(bola *b, mapa *m, float dt){
         }
         if (piso == buraco){
             float d = Vector2Distance(b->pos, m->posbur);
-            if (d < TILE * 0.3f && Vector2Length(b->vel)
+            if (d < TILE * 0.3f && Vector2Length(b->vel) < VEL_MAX_BURACO){
+                b->noburaco = true;
+                b->pos = m->posbur;
+                b->vel = (Vector2){0, 0};
+                return;
+            }
+        }
+    }}
+void desenhamira(bola *b){
+    if (!b->mirando) return;
+    Vector2 dir = {cosf(b->angulo), sinf(b->angulo)};
+    for (int k = 1; k <= 8; k++){
+        float dist = k * (10 + b->forca * 14);
+        DrawCircleV(Vector2Add(b->pos, Vector2Scale(dir, dist)), 3, WHITE);
+    }
+    int x = GetScreenWidth()/2-100;
+    int y = GetScreenHeight() -28;
+    DrawRectangle(x, y, 200, 16, DARKGRAY);
+    DrawRectangle(x, y, (int)(200 * b->forca), 16,
+                  (Color){80 + 175 * b->forca, 220 - 150 * b->forca, 60, 255});
+    DrawRectangleLines(x, y, 200, 16, WHITE);
+}
+void desenhabola(bola *b){
+    DrawCircle((int)b->pos.x + 2, (int)b->pos.y + 3, b->raio, (Color){0, 0, 0, 70});   // sombra
+    DrawCircleV(b->pos, b->raio, WHITE);
+    DrawCircleLines((int)b->pos.x, (int)b->pos.y, b->raio, LIGHTGRAY);
+}
+

@@ -15,7 +15,7 @@ typedef enum{ // o enum numera sozinho, na ordem
 }pisos;
 
 typedef struct mapa{
-    int linha, coluna, **chao;
+    int linha, coluna, par, **chao;
     Vector2 posini, posbur;
 }mapa;
 

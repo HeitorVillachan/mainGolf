@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include "mapa.h"
 #include "bola.h"
+#include "pontos.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -18,6 +19,9 @@ int main(void){
     int fase = 1;
     int totaltacadas = 0;
     bool fim = false;
+    placar pl;
+    iniciaplacar(&pl);
+    bool pontuada = false;
 
     mapa *m = carregarfase(fase);
     if (m == NULL){
@@ -33,7 +37,12 @@ int main(void){
         float dt = GetFrameTime();
         if (dt > 0.05f) dt = 0.05f;
 
-        if (!fim && IsKeyPressed(KEY_R)) iniciabola(&b, m->posini.x, m->posini.y);
+        if (!fim && !pontuada && IsKeyPressed(KEY_R)){
+            int t = b.tacadas, q = b.quedas;
+            iniciabola(&b, m->posini.x, m->posini.y);
+            b.tacadas = t + 1;
+            b.quedas = q;
+        }
 
         if (!fim && b.noburaco && IsKeyPressed(KEY_ENTER)){
             totaltacadas += b.tacadas;
@@ -46,12 +55,18 @@ int main(void){
                 fase++;
                 SetWindowSize(m->coluna * TILE, m->linha * TILE);
                 iniciabola(&b, m->posini.x, m->posini.y);
+                pontuada = false;
             }
         }
 
         if (!fim){
             tratarentrada(&b);
             atualizabola(&b, m, dt);
+
+            if (b.noburaco && !pontuada){
+                pontuarfase(&pl, b.tacadas, m->par, b.quedas);
+                pontuada = true;
+            }
         }
 
         BeginDrawing();
@@ -60,13 +75,17 @@ int main(void){
         if (!fim){
             desenhamira(&b);
             desenhabola(&b);
-            DrawText(TextFormat("Fase %d | Tacadas: %d", fase, b.tacadas), 10, 10, 20, WHITE);
+            DrawText(TextFormat("Fase %d | Par %d | Tacadas: %d | Pontos: %d",
+                fase, m->par, b.tacadas, pl.total), 10, 10, 20, WHITE);
             DrawText("<- -> mira | cima/baixo forca | ESPACO tacar | SHIFT fino | R reiniciar",
                      10, 35, 16, WHITE);
-            if (b.noburaco) DrawText("No buraco! ENTER para continuar", 10, 60, 20, YELLOW);
+            if (b.noburaco)
+                DrawText(TextFormat("No buraco! +%d (x%d)  ENTER para continuar",
+                         pl.ultimafase, pl.multiplicador), 10, 60, 20, YELLOW);
         } else {
             DrawText("FIM DE JOGO!", 10, 10, 30, YELLOW);
             DrawText(TextFormat("Total de tacadas: %d", totaltacadas), 10, 50, 20, WHITE);
+            DrawText(TextFormat("Pontuacao final: %d", pl.total), 10, 80, 20, WHITE);
         }
         EndDrawing();
     }

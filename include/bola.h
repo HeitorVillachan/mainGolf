@@ -10,7 +10,7 @@
 typedef struct bola{
     Vector2 pos, vel, ultima;
     float raio;
-    int tacadas;
+    int tacadas, quedas;
     float angulo;
     float forca;
     bool mirando;

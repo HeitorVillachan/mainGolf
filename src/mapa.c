@@ -35,8 +35,8 @@ mapa* carregarmapa(const char *caminhoArquivo){
         fclose(arquivo);
         return NULL;
     }
-    if (fscanf(arquivo, "%d %d", &m->linha, &m->coluna) != 2
-        || m->linha <= 0 || m->coluna <= 0){
+    if (fscanf(arquivo, "%d %d %d", &m->linha, &m->coluna, &m->par) != 3
+    || m->linha <= 0 || m->coluna <= 0 || m->par <= 0){
         printf("Cabecalho invalido no mapa: %s\n", caminhoArquivo);
         free(m);
         fclose(arquivo);

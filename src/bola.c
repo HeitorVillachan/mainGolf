@@ -18,6 +18,7 @@ void iniciabola(bola *b, float x, float y){
     b->forca = 0.5f;
     b->mirando = false;
     b->noburaco = false;
+    b->quedas = 0;
 }
 
 float atrito(int piso){
@@ -119,7 +120,8 @@ void atualizabola(bola *b, mapa *m, float dt){
         if (piso == agua){
             b->pos = b->ultima;
             b->vel = (Vector2){0, 0};
-            b->tacadas++;            // penalidade
+            b->tacadas++;
+            b->quedas++;
             return;
         }
         if (piso == buraco){

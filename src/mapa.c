@@ -2,6 +2,7 @@
 #include "raylib.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 int **criamatriz(int linhas, int colunas){
     int **m = malloc(linhas * sizeof(int*));
@@ -88,26 +89,39 @@ void liberarmapa(mapa *m){
     free(m);
 }
 
-void desenharmapa(mapa *m, float tamanhoTile){
+void desenharmapa(mapa *m, float tamanhotile){
     if (m == NULL || m->chao == NULL) return;
-    Color corespisos[] = { // na ordem do enum
-        GREEN,      // grama
-        YELLOW,     // areia
-        LIGHTGRAY,  // gelo
-        BROWN,      // barro
-        DARKGRAY,   // parede
-        BLUE,       // agua
-        BLACK       // buraco
-    };
+    int t = tamanhotile;
     for (int i = 0; i < m->linha; i++){
         for (int j = 0; j < m->coluna; j++){
-            int tipoPiso = m->chao[i][j];
-            Color cor = (tipoPiso >= grama && tipoPiso <= buraco) ? corespisos[tipoPiso] : WHITE;
-            DrawRectangle(j * tamanhoTile, i * tamanhoTile, tamanhoTile, tamanhoTile, cor);
-            DrawRectangleLines(j * tamanhoTile, i * tamanhoTile, tamanhoTile, tamanhoTile, Fade(BLACK, 0.2f));
-        }
-    }
-}
+            int x = j * t, y = i * t;
+            int p = m->chao[i][j];
+            if (p == grama || p == buraco){
+                Color c = (i + j) % 2 == 0 ? (Color){96, 180, 90, 255} : (Color){88, 168, 82, 255};
+                DrawRectangle(x, y, t, t, c);}
+            else if (p == areia){
+                DrawRectangle(x, y, t, t, (Color){232, 210, 150, 255});
+                DrawCircle(x + (i*13 + j*7) % 30 + 5, y + (i*5 + j*11) % 30 + 5, 1.5, (Color){200, 175, 120, 255});
+                DrawCircle(x + (i*7 + j*17) % 30 + 5, y + (i*11 + j*3) % 30 + 5, 1.5, (Color){200, 175, 120, 255});}
+            else if (p == gelo){
+                DrawRectangle(x, y, t, t, (Color){190, 230, 245, 255});
+                DrawLine(x + 8, y + t - 8, x + t - 8, y + 8, (Color){255, 255, 255, 200});}
+            else if (p == barro){
+                DrawRectangle(x, y, t, t, (Color){120, 85, 55, 255});
+                DrawCircle(x + (i*9 + j*13) % 28 + 6, y + (i*17 + j*5) % 28 + 6, 4, (Color){100, 70, 45, 255});}
+            else if (p == parede){
+                DrawRectangle(x, y, t, t, (Color){70, 70, 85, 255});
+                DrawRectangle(x, y, t, 5, (Color){120, 120, 140, 255});
+                DrawRectangleLines(x, y, t, t, (Color){50, 50, 60, 255});}
+            else if (p == agua){
+                DrawRectangle(x, y, t, t, (Color){50, 120, 200, 255});
+                DrawRectangle(x + 8 + (int)(sinf(GetTime()*2 + i + j) * 6), y + 18, 14, 3, (Color){160, 210, 255, 255});}
+            if (p == buraco){
+                int cx = x + t/2, cy = y + t/2;
+                DrawCircle(cx, cy, 11, (Color){20, 20, 20, 255});
+                DrawRectangle(cx, cy - 30, 2, 30, WHITE);
+                DrawTriangle((Vector2){cx + 2, cy - 30}, (Vector2){cx + 2, cy - 20}, (Vector2){cx + 16, cy - 25}, RED);
+            }}}}
 
 int pisoaqui(mapa *m, float x, float y){
     if (m == NULL || x < 0 || y < 0) return parede;

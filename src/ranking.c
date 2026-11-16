@@ -3,27 +3,23 @@
 #include <string.h>
 #include "ranking.h"
 
-
-
-
-no *inserirordenado(no *ini, char *nome, int tacadas){
+no *inserirordenado(no *ini, char *nome, int pontos){
     no *novo = malloc(sizeof(no));
     if(novo == NULL) return ini;
     strncpy(novo->nome, nome, 19);
     novo->nome[19] = '\0';
-    novo->tacadas = tacadas;
+    novo->pontos = pontos;
     novo->prox = NULL;
-    if(ini == NULL || tacadas < ini->tacadas){
-        novo->prox =ini;
+    if(ini == NULL || pontos > ini->pontos){          // era: tacadas < ini->tacadas
+        novo->prox = ini;
         return novo;
     }
-    no *aux =ini;
-    while(aux->prox != NULL  && aux->prox->tacadas <= tacadas) aux = aux->prox;
+    no *aux = ini;
+    while(aux->prox != NULL && aux->prox->pontos >= pontos) aux = aux->prox;   // era: <= tacadas
     novo->prox = aux->prox;
     aux->prox = novo;
     return ini;
 }
-
 
 no *carregarranking(char *arquivo){
     no *ini = NULL;
@@ -35,13 +31,15 @@ no *carregarranking(char *arquivo){
     fclose(f);
     return ini;
 }
+
 void salvarranking(no *ini, char *arquivo){
     FILE *f = fopen(arquivo, "w");
     if(f == NULL) return;
     for(no *p = ini; p != NULL; p = p->prox)
-        fprintf(f, "%s %d\n", p->nome, p->tacadas);
+        fprintf(f, "%s %d\n", p->nome, p->pontos);
     fclose(f);
 }
+
 void liberarranking(no *ini){
     while(ini != NULL){
         no *prox = ini->prox;

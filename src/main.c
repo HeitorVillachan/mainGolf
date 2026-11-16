@@ -3,8 +3,11 @@
 #include "bola.h"
 #include "pontos.h"
 #include "ranking.h"
+#include "menu.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+typedef enum { TELA_MENU, TELA_JOGO, TELA_RANKING } tela;
 
 static mapa* carregarfase(int fase){
     char caminho[64];
@@ -14,8 +17,14 @@ static mapa* carregarfase(int fase){
 }
 
 int main(void){
-    InitWindow(800, 480, "Golf");
+    InitWindow(800, 480, "main(Golf)");
     SetTargetFPS(60);
+
+    menu mn;
+    iniciamenu(&mn);
+
+    tela atual = TELA_MENU;
+    bool sair = false;
 
     int fase = 1;
     int totaltacadas = 0;
@@ -26,10 +35,10 @@ int main(void){
 
     mapa *m = carregarfase(fase);
     if (m == NULL){
+        liberamenu(&mn);
         CloseWindow();
         return 1;
     }
-    SetWindowSize(m->coluna * TILE, m->linha * TILE);
 
     bola b;
     iniciabola(&b, m->posini.x, m->posini.y);
@@ -37,11 +46,37 @@ int main(void){
     char nome[20] = "";
     int tamnome = 0;
     bool salvo = false;
-    no *rank = NULL;
+    no *rank = carregarranking("scores.txt");
 
-    while (!WindowShouldClose()){
+    while (!WindowShouldClose() && !sair){
         float dt = GetFrameTime();
         if (dt > 0.05f) dt = 0.05f;
+
+        if (atual == TELA_MENU){
+            int escolha = atualizamenu(&mn);
+            if (escolha == OPC_JOGAR){
+                atual = TELA_JOGO;
+                SetWindowSize(m->coluna * TILE, m->linha * TILE);
+            } else if (escolha == OPC_RANKING){
+                atual = TELA_RANKING;
+            } else if (escolha == OPC_SAIR){
+                sair = true;
+            }
+
+            BeginDrawing();
+            desenhamenu(&mn);
+            EndDrawing();
+            continue;
+        }
+
+        if (atual == TELA_RANKING){
+            if (atualizaranking()) atual = TELA_MENU;
+
+            BeginDrawing();
+            desenharranking(&mn, rank);
+            EndDrawing();
+            continue;
+        }
 
         if (!fim && !pontuada && IsKeyPressed(KEY_R)){
             int t = b.tacadas, q = b.quedas;
@@ -54,7 +89,8 @@ int main(void){
             totaltacadas += b.tacadas;
             mapa *prox = carregarfase(fase + 1);
             if (prox == NULL){
-                fim = true;               
+                fim = true;
+                while (GetCharPressed() > 0);
             } else {
                 liberarmapa(m);
                 m = prox;
@@ -75,6 +111,27 @@ int main(void){
             }
         }
 
+        if (fim && salvo && IsKeyPressed(KEY_ENTER)){
+            liberarmapa(m);
+            fase = 1;
+            m = carregarfase(fase);
+            if (m == NULL){
+                sair = true;
+                continue;
+            }
+            totaltacadas = 0;
+            iniciaplacar(&pl);
+            pontuada = false;
+            fim = false;
+            salvo = false;
+            tamnome = 0;
+            nome[0] = '\0';
+            iniciabola(&b, m->posini.x, m->posini.y);
+            SetWindowSize(800, 480);
+            atual = TELA_MENU;
+            continue;
+        }
+
         if (fim && !salvo){
             int c = GetCharPressed();
             while (c > 0){
@@ -83,17 +140,16 @@ int main(void){
                     nome[tamnome] = '\0';
                 }
                 c = GetCharPressed();
-                }
-                if (IsKeyPressed(KEY_BACKSPACE) && tamnome > 0)
-                    nome[--tamnome] = '\0';
-                    
-                if (IsKeyPressed(KEY_ENTER) && tamnome > 0){
-                rank = carregarranking("scores.txt");
+            }
+            if (IsKeyPressed(KEY_BACKSPACE) && tamnome > 0)
+                nome[--tamnome] = '\0';
+
+            if (IsKeyPressed(KEY_ENTER) && tamnome > 0){
                 rank = inserirordenado(rank, nome, pl.total);
                 salvarranking(rank, "scores.txt");
                 salvo = true;
-                }
             }
+        }
 
         BeginDrawing();
         ClearBackground(BLACK);
@@ -118,6 +174,7 @@ int main(void){
                 DrawText(nome, 10, 145, 20, YELLOW);
             } else {
                 DrawText("RANKING", 10, 115, 20, YELLOW);
+                DrawText("(ENTER volta ao menu)", 120, 118, 16, LIGHTGRAY);
                 int y = 145, pos = 1;
                 for (no *p = rank; p != NULL && pos <= 5; p = p->prox, pos++){
                     DrawText(TextFormat("%d. %s - %d", pos, p->nome, p->pontos), 10, y, 20, WHITE);
@@ -130,6 +187,7 @@ int main(void){
 
     liberarmapa(m);
     liberarranking(rank);
+    liberamenu(&mn);
     CloseWindow();
     return 0;
 }

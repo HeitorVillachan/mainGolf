@@ -66,14 +66,23 @@ int main(void){
         }
 
         if (!fim){
-            if (fim && !salvo){
-                int c = GetCharPressed();
-                while (c > 0){
-                    if (c > 32 && c <= 126 && tamnome < 19){
-                        nome[tamnome++] = (char)c;
-                        nome[tamnome] = '\0';
-                    }
-                    c = GetCharPressed();
+            tratarentrada(&b);
+            atualizabola(&b, m, dt);
+
+            if (b.noburaco && !pontuada){
+                pontuarfase(&pl, b.tacadas, m->par, b.quedas);
+                pontuada = true;
+            }
+        }
+
+        if (fim && !salvo){
+            int c = GetCharPressed();
+            while (c > 0){
+                if (c > 32 && c <= 126 && tamnome < 19){
+                    nome[tamnome++] = (char)c;
+                    nome[tamnome] = '\0';
+                }
+                c = GetCharPressed();
                 }
                 if (IsKeyPressed(KEY_BACKSPACE) && tamnome > 0)
                     nome[--tamnome] = '\0';
@@ -85,16 +94,6 @@ int main(void){
                 salvo = true;
                 }
             }
-
-
-            tratarentrada(&b);
-            atualizabola(&b, m, dt);
-
-            if (b.noburaco && !pontuada){
-                pontuarfase(&pl, b.tacadas, m->par, b.quedas);
-                pontuada = true;
-            }
-        }
 
         BeginDrawing();
         ClearBackground(BLACK);

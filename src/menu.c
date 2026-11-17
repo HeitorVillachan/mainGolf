@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "menu.h"
 
 static const Color FUNDO   = {21, 26, 23, 255};
@@ -82,7 +83,7 @@ bool atualizaranking(void){
     return IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_BACKSPACE);
 }
 
-void desenharanking(menu *mn, no *rank){
+void desenharranking(menu *mn, no *rank){
     Font f = mn->fonte;
 
     ClearBackground(FUNDO);

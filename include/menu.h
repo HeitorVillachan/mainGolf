@@ -16,6 +16,6 @@ void liberamenu(menu *mn);
 int atualizamenu(menu *mn);         
 void desenhamenu(menu *mn);
 bool atualizaranking(void);     
-void desenharanking(menu *mn, no *rank);
+void desenharranking(menu *mn, no *rank);
 
 #endif

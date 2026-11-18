@@ -1,4 +1,5 @@
 #include "raylib.h"
+#include "video.h"
 #include "mapa.h"
 #include "bola.h"
 #include "pontos.h"
@@ -6,188 +7,251 @@
 #include "menu.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#define ARQ_RANKING "scores.txt"
+#define DT_MAX      0.05f
+#define TOP_RANKING 5
 
 typedef enum { TELA_MENU, TELA_JOGO, TELA_RANKING } tela;
 
-static mapa* carregarfase(int fase){
+typedef struct jogo{
+    video vid;
+    menu mn;
+    tela atual;
+    bool sair;
+
+    mapa *m;
+    bola b;
+    placar pl;
+    int fase, totaltacadas;
+    bool fim, pontuada, salvo;
+
+    char nome[TAM_NOME];
+    int tamnome;
+    no *rank;
+}jogo;
+
+static mapa *carregarfase(int fase){
     char caminho[64];
     snprintf(caminho, sizeof(caminho), "assets/mapas/mapa%d.txt", fase);
     if (!FileExists(caminho)) return NULL;
     return carregarmapa(caminho);
 }
 
-int main(void){
-    InitWindow(800, 480, "main(Golf)");
-    SetTargetFPS(60);
+static void entrarfase(jogo *g){
+    definirresolucao(&g->vid, g->m->coluna * TILE, g->m->linha * TILE);
+    iniciabola(&g->b, g->m->posini.x, g->m->posini.y);
+    g->pontuada = false;
+}
 
-    menu mn;
-    iniciamenu(&mn);
+static void reiniciarbola(jogo *g){
+    bola *b = &g->b;
+    int t = b->tacadas, q = b->quedas;
+    float ang = b->angulo, forca = b->forca;
+    iniciabola(b, g->m->posini.x, g->m->posini.y);
+    b->tacadas = t + 1;       
+    b->quedas = q;
+    b->angulo = ang;         
+    b->forca = forca;
+}
 
-    tela atual = TELA_MENU;
-    bool sair = false;
+static void avancarfase(jogo *g){
+    g->totaltacadas += g->b.tacadas;
+    mapa *prox = carregarfase(g->fase + 1);
+    if (prox == NULL){
+        g->fim = true;
+        while (GetCharPressed() > 0); 
+        return;
+    }
+    liberarmapa(g->m);
+    g->m = prox;
+    g->fase++;
+    entrarfase(g);
+}
 
-    int fase = 1;
-    int totaltacadas = 0;
-    bool fim = false;
-    placar pl;
-    iniciaplacar(&pl);
-    bool pontuada = false;
+static void voltarmenu(jogo *g){
+    mapa *novo = carregarfase(1);
+    if (novo == NULL){
+        g->sair = true;
+        return;
+    }
+    liberarmapa(g->m);
+    g->m = novo;
+    g->fase = 1;
+    g->totaltacadas = 0;
+    iniciaplacar(&g->pl);
+    g->fim = false;
+    g->salvo = false;
+    g->tamnome = 0;
+    g->nome[0] = '\0';
+    iniciabola(&g->b, g->m->posini.x, g->m->posini.y);
+    g->pontuada = false;
+    definirresolucao(&g->vid, LARGURA_MENU, ALTURA_MENU);
+    g->atual = TELA_MENU;
+}
 
-    mapa *m = carregarfase(fase);
-    if (m == NULL){
-        liberamenu(&mn);
+static void atualizarmenu(jogo *g){
+    int escolha = atualizamenu(&g->mn);
+    if (escolha == OPC_JOGAR){
+        g->atual = TELA_JOGO;
+        definirresolucao(&g->vid, g->m->coluna * TILE, g->m->linha * TILE);
+    } else if (escolha == OPC_RANKING){
+        g->atual = TELA_RANKING;
+    } else if (escolha == OPC_SAIR){
+        g->sair = true;
+    }
+}
+
+static void atualizarnome(jogo *g){
+    int c;
+    while ((c = GetCharPressed()) > 0){
+        if (c > 32 && c <= 126 && g->tamnome < TAM_NOME - 1){
+            g->nome[g->tamnome++] = (char)c;
+            g->nome[g->tamnome] = '\0';
+        }
+    }
+    if ((IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE)) && g->tamnome > 0)
+        g->nome[--g->tamnome] = '\0';
+
+    if (IsKeyPressed(KEY_ENTER) && g->tamnome > 0){
+        g->rank = inserirordenado(g->rank, g->nome, g->pl.total);
+        salvarranking(g->rank, ARQ_RANKING);
+        g->salvo = true;
+    }
+}
+
+static void atualizarjogada(jogo *g, float dt){
+    bola *b = &g->b;
+
+    if (!g->pontuada && b->tacadas > 0 && IsKeyPressed(KEY_R))
+        reiniciarbola(g);
+
+    if (b->noburaco && IsKeyPressed(KEY_ENTER)){
+        avancarfase(g);
+        if (g->fim) return;
+        b = &g->b;
+    }
+
+    tratarentrada(b, dt);
+    atualizabola(b, g->m, dt);
+
+    if (b->noburaco && !g->pontuada){
+        pontuarfase(&g->pl, b->tacadas, g->m->par, b->quedas);
+        g->pontuada = true;
+    }
+}
+
+static void atualizarpartida(jogo *g, float dt){
+    if (!g->fim){
+        atualizarjogada(g, dt);
+    } else if (!g->salvo){
+        atualizarnome(g);
+    } else if (IsKeyPressed(KEY_ENTER)){
+        voltarmenu(g);
+    }
+}
+
+static void atualizar(jogo *g, float dt){
+    switch (g->atual){
+    case TELA_MENU:    atualizarmenu(g); break;
+    case TELA_RANKING: if (atualizaranking()) g->atual = TELA_MENU; break;
+    case TELA_JOGO:    atualizarpartida(g, dt); break;
+    }
+}
+
+static void desenharfim(const jogo *g){
+    DrawText("FIM DE JOGO!", 10, 10, 30, YELLOW);
+    DrawText(TextFormat("Total de tacadas: %d", g->totaltacadas), 10, 50, 20, WHITE);
+    DrawText(TextFormat("Pontuacao final: %d", g->pl.total), 10, 80, 20, WHITE);
+
+    if (!g->salvo){
+        DrawText("Digite seu nome e ENTER:", 10, 115, 20, WHITE);
+        DrawText(g->nome, 10, 145, 20, YELLOW);
+        return;
+    }
+
+    DrawText("RANKING", 10, 115, 20, YELLOW);
+    DrawText("(ENTER volta ao menu)", 120, 118, 16, LIGHTGRAY);
+    int y = 145, pos = 1;
+    for (const no *p = g->rank; p != NULL && pos <= TOP_RANKING; p = p->prox, pos++){
+        DrawText(TextFormat("%d. %s - %d", pos, p->nome, p->pontos), 10, y, 20, WHITE);
+        y += 25;
+    }
+}
+
+static void desenharjogo(const jogo *g){
+    ClearBackground(BLACK);
+    desenharmapa(g->m);
+
+    if (g->fim){
+        desenharfim(g);
+        return;
+    }
+
+    desenhamira(&g->b, g->vid.largura, g->vid.altura);
+    desenhabola(&g->b);
+    DrawText(TextFormat("Fase %d | Par %d | Tacadas: %d | Pontos: %d",
+        g->fase, g->m->par, g->b.tacadas, g->pl.total), 10, 10, 20, WHITE);
+    DrawText("<- -> mira | cima/baixo forca | ESPACO tacar | SHIFT fino | R reiniciar | F11 tela cheia",
+             10, 35, 16, WHITE);
+    if (g->b.noburaco)
+        DrawText(TextFormat("No buraco! +%d (x%d)  ENTER para continuar",
+                 g->pl.ultimafase, g->pl.multiplicador), 10, 60, 20, YELLOW);
+}
+
+static void desenhar(jogo *g){
+    comecardesenho(&g->vid);
+    switch (g->atual){
+    case TELA_MENU:    desenhamenu(&g->mn); break;
+    case TELA_RANKING: desenharranking(&g->mn, g->rank); break;
+    case TELA_JOGO:    desenharjogo(g); break;
+    }
+    terminardesenho();
+}
+
+static bool iniciajogo(jogo *g){
+    memset(g, 0, sizeof(*g));
+
+    iniciavideo(&g->vid, LARGURA_MENU, ALTURA_MENU, "main(Golf)");
+    iniciamenu(&g->mn);
+
+    g->atual = TELA_MENU;
+    g->fase = 1;
+    iniciaplacar(&g->pl);
+
+    g->m = carregarfase(g->fase);
+    if (g->m == NULL){
+        TraceLog(LOG_ERROR, "Nao foi possivel carregar assets/mapas/mapa1.txt");
+        liberamenu(&g->mn);
         CloseWindow();
-        return 1;
+        return false;
     }
+    iniciabola(&g->b, g->m->posini.x, g->m->posini.y);
+    g->rank = carregarranking(ARQ_RANKING);
+    return true;
+}
 
-    bola b;
-    iniciabola(&b, m->posini.x, m->posini.y);
-
-    char nome[20] = "";
-    int tamnome = 0;
-    bool salvo = false;
-    no *rank = carregarranking("scores.txt");
-
-    while (!WindowShouldClose() && !sair){
-        float dt = GetFrameTime();
-        if (dt > 0.05f) dt = 0.05f;
-
-        if (atual == TELA_MENU){
-            int escolha = atualizamenu(&mn);
-            if (escolha == OPC_JOGAR){
-                atual = TELA_JOGO;
-                SetWindowSize(m->coluna * TILE, m->linha * TILE);
-            } else if (escolha == OPC_RANKING){
-                atual = TELA_RANKING;
-            } else if (escolha == OPC_SAIR){
-                sair = true;
-            }
-
-            BeginDrawing();
-            desenhamenu(&mn);
-            EndDrawing();
-            continue;
-        }
-
-        if (atual == TELA_RANKING){
-            if (atualizaranking()) atual = TELA_MENU;
-
-            BeginDrawing();
-            desenharranking(&mn, rank);
-            EndDrawing();
-            continue;
-        }
-
-        if (!fim && !pontuada && IsKeyPressed(KEY_R)){
-            int t = b.tacadas, q = b.quedas;
-            iniciabola(&b, m->posini.x, m->posini.y);
-            b.tacadas = t + 1;
-            b.quedas = q;
-        }
-
-        if (!fim && b.noburaco && IsKeyPressed(KEY_ENTER)){
-            totaltacadas += b.tacadas;
-            mapa *prox = carregarfase(fase + 1);
-            if (prox == NULL){
-                fim = true;
-                while (GetCharPressed() > 0);
-            } else {
-                liberarmapa(m);
-                m = prox;
-                fase++;
-                SetWindowSize(m->coluna * TILE, m->linha * TILE);
-                iniciabola(&b, m->posini.x, m->posini.y);
-                pontuada = false;
-            }
-        }
-
-        if (!fim){
-            tratarentrada(&b);
-            atualizabola(&b, m, dt);
-
-            if (b.noburaco && !pontuada){
-                pontuarfase(&pl, b.tacadas, m->par, b.quedas);
-                pontuada = true;
-            }
-        }
-
-        if (fim && salvo && IsKeyPressed(KEY_ENTER)){
-            liberarmapa(m);
-            fase = 1;
-            m = carregarfase(fase);
-            if (m == NULL){
-                sair = true;
-                continue;
-            }
-            totaltacadas = 0;
-            iniciaplacar(&pl);
-            pontuada = false;
-            fim = false;
-            salvo = false;
-            tamnome = 0;
-            nome[0] = '\0';
-            iniciabola(&b, m->posini.x, m->posini.y);
-            SetWindowSize(800, 480);
-            atual = TELA_MENU;
-            continue;
-        }
-
-        if (fim && !salvo){
-            int c = GetCharPressed();
-            while (c > 0){
-                if (c > 32 && c <= 126 && tamnome < 19){
-                    nome[tamnome++] = (char)c;
-                    nome[tamnome] = '\0';
-                }
-                c = GetCharPressed();
-            }
-            if (IsKeyPressed(KEY_BACKSPACE) && tamnome > 0)
-                nome[--tamnome] = '\0';
-
-            if (IsKeyPressed(KEY_ENTER) && tamnome > 0){
-                rank = inserirordenado(rank, nome, pl.total);
-                salvarranking(rank, "scores.txt");
-                salvo = true;
-            }
-        }
-
-        BeginDrawing();
-        ClearBackground(BLACK);
-        desenharmapa(m, TILE);
-        if (!fim){
-            desenhamira(&b);
-            desenhabola(&b);
-            DrawText(TextFormat("Fase %d | Par %d | Tacadas: %d | Pontos: %d",
-                fase, m->par, b.tacadas, pl.total), 10, 10, 20, WHITE);
-            DrawText("<- -> mira | cima/baixo forca | ESPACO tacar | SHIFT fino | R reiniciar",
-                     10, 35, 16, WHITE);
-            if (b.noburaco)
-                DrawText(TextFormat("No buraco! +%d (x%d)  ENTER para continuar",
-                         pl.ultimafase, pl.multiplicador), 10, 60, 20, YELLOW);
-        } else {
-            DrawText("FIM DE JOGO!", 10, 10, 30, YELLOW);
-            DrawText(TextFormat("Total de tacadas: %d", totaltacadas), 10, 50, 20, WHITE);
-            DrawText(TextFormat("Pontuacao final: %d", pl.total), 10, 80, 20, WHITE);
-
-            if (!salvo){
-                DrawText("Digite seu nome e ENTER:", 10, 115, 20, WHITE);
-                DrawText(nome, 10, 145, 20, YELLOW);
-            } else {
-                DrawText("RANKING", 10, 115, 20, YELLOW);
-                DrawText("(ENTER volta ao menu)", 120, 118, 16, LIGHTGRAY);
-                int y = 145, pos = 1;
-                for (no *p = rank; p != NULL && pos <= 5; p = p->prox, pos++){
-                    DrawText(TextFormat("%d. %s - %d", pos, p->nome, p->pontos), 10, y, 20, WHITE);
-                    y += 25;
-                }
-            }
-        }
-        EndDrawing();
-    }
-
-    liberarmapa(m);
-    liberarranking(rank);
-    liberamenu(&mn);
+static void finalizajogo(jogo *g){
+    liberarmapa(g->m);
+    liberarranking(g->rank);
+    liberamenu(&g->mn);
     CloseWindow();
+}
+
+int main(void){
+    jogo g;
+    if (!iniciajogo(&g)) return 1;
+
+    while (!WindowShouldClose() && !g.sair){
+        float dt = GetFrameTime();
+        if (dt > DT_MAX) dt = DT_MAX;
+
+        atualizavideo(&g.vid);
+        atualizar(&g, dt);
+        desenhar(&g);
+    }
+
+    finalizajogo(&g);
     return 0;
 }

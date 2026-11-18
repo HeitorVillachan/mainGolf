@@ -18,9 +18,9 @@ typedef struct bola{
 }bola;
 
 void iniciabola(bola *b, float x, float y);
-void tratarentrada(bola *b);
-void atualizabola(bola *b, mapa *m, float dt);
-void desenhabola(bola *b);
-void desenhamira(bola *b);
-bool bolaparada(bola *b);
+void tratarentrada(bola *b, float dt);
+void atualizabola(bola *b, const mapa *m, float dt);
+void desenhabola(const bola *b);
+void desenhamira(const bola *b, int largura, int altura);
+bool bolaparada(const bola *b);
 #endif

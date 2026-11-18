@@ -3,7 +3,7 @@
 #include "raylib.h"
 #define TILE 40
 
-typedef enum{ // o enum numera sozinho, na ordem
+typedef enum{
     grama,
     areia,
     gelo,
@@ -23,7 +23,7 @@ int **criamatriz(int linhas, int colunas);
 void liberamatriz(int **m, int linhas);
 mapa* carregarmapa(const char *caminhoArquivo);
 void liberarmapa(mapa *m);
-int pisoaqui(mapa *m, float x, float y);
-void desenharmapa(mapa *m, float tamanhotile);
+int pisoaqui(const mapa *m, float x, float y);
+void desenharmapa(const mapa *m);
 
 #endif

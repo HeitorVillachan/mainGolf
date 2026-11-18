@@ -31,8 +31,8 @@ void liberamenu(menu *mn){
 }
 
 int atualizamenu(menu *mn){
-    if (IsKeyPressed(KEY_DOWN)) mn->opcao = (mn->opcao + 1) % 3;
-    if (IsKeyPressed(KEY_UP))   mn->opcao = (mn->opcao + 2) % 3;
+    if (IsKeyPressed(KEY_DOWN) || IsKeyPressedRepeat(KEY_DOWN)) mn->opcao = (mn->opcao + 1) % 3;
+    if (IsKeyPressed(KEY_UP)   || IsKeyPressedRepeat(KEY_UP))   mn->opcao = (mn->opcao + 2) % 3;
     if (IsKeyPressed(KEY_ENTER)) return mn->opcao;
     return OPC_NENHUMA;
 }

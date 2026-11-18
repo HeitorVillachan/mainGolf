@@ -1,2 +1,9 @@
+*.exe
+*.o
 golf
-maingolf
+
+scores.txt
+
+.vscode/
+.idea/
+.DS_Store

@@ -14,7 +14,7 @@ void iniciabola(bola *b, float x, float y){
     b->pos = (Vector2){x, y};
     b->ultima = b->pos;
     b->vel = (Vector2){0, 0};
-    b->raio = 8;
+    b->raio = TILE * 0.3f;
     b->tacadas = 0;
     b->angulo = 0;
     b->forca = 0.5f;
@@ -132,7 +132,7 @@ void atualizabola(bola *b, const mapa *m, float dt){
         }
         if (piso == buraco){
             float d = Vector2Distance(b->pos, m->posbur);
-            if (d < TILE * 0.3f && Vector2Length(b->vel) < VEL_MAX_BURACO){
+            if (d < TILE * 0.4f && Vector2Length(b->vel) < VEL_MAX_BURACO){
                 b->noburaco = true;
                 b->pos = m->posbur;
                 b->vel = (Vector2){0, 0};

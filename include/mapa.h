@@ -1,7 +1,7 @@
 #ifndef MAPA_H
 #define MAPA_H
 #include "raylib.h"
-#define TILE 40
+#define TILE 20
 
 typedef enum{
     grama,

@@ -40,6 +40,11 @@ Com uma interface inspirada na própria sintaxe da linguagem C, o jogo conta com
 
 ---
 
+## 🎥 Demonstração (Gameplay)
+
+> 🔗 **[Assista ao vídeo da gameplay aqui]https://youtu.be/BwWm7Is-VZk?si=wdIjkEkfONfnVLDm**
+
+
 ## 📁 Estrutura do Projeto
 
 ```text

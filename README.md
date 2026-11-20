@@ -58,4 +58,4 @@ mainGolf-main/
 │   └── video.c             # Controle de resolução, escala e tela cheia
 ├── Makefile                # Automação de build com GCC
 ├── scores.txt              # Registro local das pontuações do ranking
-└── README.me
+└── README.md
